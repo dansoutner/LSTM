@@ -89,7 +89,8 @@ if __name__ == "__main__":
 	lstm = LSTM.LSTM(len(dic), len(dic), iHidden, rnd_seed=2)
 	ALPHA = 0.1
 	
-	p = [ppl(iTest, lstm)]
+	#p = [ppl(iTest, lstm)]
+	p = [100000]
 	iter = 0
 	while True:
 		start = time.time()
@@ -97,8 +98,8 @@ if __name__ == "__main__":
 			inx = index_to_vector(iText[i],len(dic))
 			outx = index_to_vector(iText[i + 1],len(dic))
 			lstm.Next(inx, outx, learningRate=ALPHA)
-			#if i % 100 == 1:
-			#	print i / (time.time() - start)
+			if i % 100 == 1:
+				print i / (time.time() - start)
 		lstm.Reset()
 		p.append(ppl(iTest, lstm))
 		print "%d, speed %.2f words/s, ppl: %.2f, alpha %.5f" % (iter, i / (time.time() - start), p[-1], ALPHA)

@@ -64,7 +64,7 @@ cdef inline float SigmoidDerivative_f(float x):
 	cdef float act = 1 / (1 + np.exp(-x))
 	return act * (1 - act)
 
-print "Using Cython module. "
+print "Using Cython module."
 
 npzeros = np.zeros
 
@@ -143,8 +143,10 @@ class LSTM:
 		
 		cdef int cell_blocks = self.cell_blocks
 		cdef int full_input_dimension = self.full_input_dimension
-		cdef int i, j, k
-		
+		cdef int full_hidden_dimension = self.full_hidden_dimension
+		cdef int output_dimension = self.output_dimension
+		cdef int i, j, k, c
+		cdef float ALPHA = self.learningRate
 		
 		#setup input vector
 		cdef np.ndarray full_input = np.zeros((full_input_dimension), dtype=DTYPE)
@@ -199,14 +201,14 @@ class LSTM:
 		NetOutputAct = CECSquashAct * OutputGateAct
 
 		#prepare hidden layer plus bias
-		full_hidden = np.zeros((self.full_hidden_dimension))
+		full_hidden = np.zeros((full_hidden_dimension))
 		full_hidden[0: cell_blocks] = NetOutputAct
 		full_hidden[-1] = 1.0
 		
 		#calculate output
 		cdef np.ndarray[DTYPE_t, ndim=1] output = np.zeros((self.output_dimension), dtype=DTYPE)
 		for k in range(self.output_dimension):
-			for j in range(self.full_hidden_dimension):
+			for j in range(full_hidden_dimension):
 				output[k] += self.weightsGlobalOutput[k][j] * full_hidden[j]
 			#output not squashed
 		output = SoftmaxActivate(output)
@@ -225,26 +227,26 @@ class LSTM:
 		
 		#output to hidden
 		cdef np.ndarray deltaNetOutput = np.zeros((cell_blocks))
-		for k in range(self.output_dimension):
+		for k in range(output_dimension):
 			deltaNetOutput += deltaGlobalOutputPre[k] * self.weightsGlobalOutput[k][:-1]
-			self.weightsGlobalOutput[k, :-1] += deltaGlobalOutputPre[k] * NetOutputAct * self.learningRate
-		self.weightsGlobalOutput[:, cell_blocks] += deltaGlobalOutputPre * 1.0 * self.learningRate
+			self.weightsGlobalOutput[k, :-1] += deltaGlobalOutputPre[k] * NetOutputAct * ALPHA
+		self.weightsGlobalOutput[:, cell_blocks] += deltaGlobalOutputPre * ALPHA
 		
 		
 		for c in range(cell_blocks):
 			#update output gates
 			deltaOutputGatePost = deltaNetOutput[c] * CECSquashAct[c]
 			deltaOutputGatePre = SigmoidDerivative_f(OutputGateSum[c]) * deltaOutputGatePost
-			self.weightsOutputGate[c] += full_input * deltaOutputGatePre * self.learningRate
-			self.peepOutputGate[c] += CEC3[c] * deltaOutputGatePre * self.learningRate
+			self.weightsOutputGate[c] += full_input * deltaOutputGatePre * ALPHA
+			self.peepOutputGate[c] += CEC3[c] * deltaOutputGatePre * ALPHA
 			#before outgate
 			deltaCEC3 = deltaNetOutput[c] * OutputGateAct[c]
 
 			#update input gates
 			deltaInputGatePost = deltaCEC3 * NetInputAct[c]
 			deltaInputGatePre = SigmoidDerivative_f(InputGateSum[c]) * deltaInputGatePost
-			self.weightsInputGate[c] += self.dSdwWeightsInputGate[c] * deltaCEC3 * self.learningRate
-			self.peepInputGate[c] += CEC2[c] * deltaInputGatePre * self.learningRate
+			self.weightsInputGate[c] += self.dSdwWeightsInputGate[c] * deltaCEC3 * ALPHA
+			self.peepInputGate[c] += CEC2[c] * deltaInputGatePre * ALPHA
 
 			#before ingate
 			deltaCEC2 = deltaCEC3
@@ -252,11 +254,11 @@ class LSTM:
 			#update forget gates
 			deltaForgetGatePost = deltaCEC2 * CEC1[c]
 			deltaForgetGatePre = SigmoidDerivative_f(ForgetGateSum[c]) * deltaForgetGatePost
-			self.weightsForgetGate[c] += self.dSdwWeightsForgetGate[c] * deltaCEC2 * self.learningRate
-			self.peepForgetGate[c] += CEC1[c] * deltaForgetGatePre * self.learningRate
+			self.weightsForgetGate[c] += self.dSdwWeightsForgetGate[c] * deltaCEC2 * ALPHA
+			self.peepForgetGate[c] += CEC1[c] * deltaForgetGatePre * ALPHA
 
 			#update cell inputs
-			self.weightsNetInput[c] += self.dSdwWeightsNetInput[c] * deltaCEC3 * self.learningRate
+			self.weightsNetInput[c] += self.dSdwWeightsNetInput[c] * deltaCEC3 * ALPHA
 			#no peeps for cell inputs
 		
 		#//roll-over context to next time step
