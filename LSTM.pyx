@@ -2,7 +2,6 @@
 #cython: boundscheck=False
 #cython: wraparound=False
 #cython: nonecheck=True
-#cython: profile=True
 
 """
 Simple implementation of LSTM RNN,
@@ -23,6 +22,7 @@ import re
 import math
 import sys
 import cProfile
+import cPickle
 
 np.import_array()
 np.set_printoptions(edgeitems=2, infstr='Inf', linewidth=75, nanstr='NaN', precision=8, suppress=True, threshold=1000000)
@@ -119,6 +119,8 @@ class LSTM:
 		"""
 		cdef float l = 0.
 		self.Reset()
+		oov_log_penalty = -log10(len(self.dic))
+		
 		for ii in range(len(iText)-1):
 			if iText[ii + 1] > -1:
 				o = self.forward(self.index_to_vector(iText[ii], len(self.dic)))
@@ -126,7 +128,7 @@ class LSTM:
 			else:
 				l += oov_log_penalty
 
-			if iText[ii + 1] == 0:
+			if iText[ii + 1] == 0 and self.independent:
 				self.CEC = np.zeros(self.cell_blocks)
 				self.context = np.ones(self.cell_blocks)
 
@@ -143,11 +145,13 @@ class LSTM:
 
 	def __init__(self):
 		cdef int iHidden
-
+		
+		self.independent = True
+		
 		if len(sys.argv) < 3:
 			train_file = "nano_train"
 			test_file = "nano_test"
-			iHidden = 15
+			iHidden = 5
 			rnd_seed = 0
 
 		else:
@@ -166,26 +170,27 @@ class LSTM:
 		self.dic = sorted(list(set(lText))) # make dic
 		self.dic.remove("</s>")	# it is good to have a </s> as 0 in dic
 		self.dic.insert(0, "</s>")
-
-
 		try:
-			self.dic.remove(UNK)
+			self.dic.remove(UNK)	# unk word remove from dic
 		except ValueError:
 			pass
-
+		
+		projections_file = "word_projections-80.pkl"
+		self.projections = cPickle.load(open(projections_file))
+		
 		iText = []
 		for word in lText:
 			try:
 				iText.append(self.dic.index(word))
 			except:
-				iText.append(-1)
+				iText.append(-1)	# unk
 
 		iTest = []
 		for word in lTest:
 			try:
 				iTest.append(self.dic.index(word))
 			except:
-				iTest.append(-1)
+				iTest.append(-1)	# unk
 
 		print "Dictionary length: %d" % len(self.dic)
 		print "Train text %d words" % len(iText)
@@ -223,7 +228,7 @@ class LSTM:
 		random.seed(rnd_seed)
 
 		# CONST
-		cdef float init_weight_range = 0.1
+		cdef float init_weight_range = 0.05
 		cdef int biasInputGate = 2 #2
 		cdef int biasForgetGate = -2 #-2
 		cdef int biasOutputGate = 2 #2
@@ -313,7 +318,8 @@ class LSTM:
 		cdef int len_dic = len(self.dic)
 		p = [self.ppl(iTest)]
 		#p = [10000000]
-
+		oov_log_penalty = -log10(len(self.dic))
+		
 		cdef int iter = 0
 		while True:
 			start = time.time()
@@ -344,10 +350,10 @@ class LSTM:
 				input = np.zeros((len_dic), dtype=DTYPE)
 				if iText[word] > -1:
 					input[iText[word]] = 1.
-				#input = self.index_to_vector(iText[i], len_dic)
+				#input = self.index_to_vector_cslm(iText[word], len_dic)
 				target_output = np.zeros((len_dic), dtype=DTYPE)
 				target_output[iText[word + 1]] = 1.
-				#target_output = self.index_to_vector(iText[i + 1], len_dic)
+				#target_output = self.index_to_vector(iText[word + 1], len_dic)
 
 				###############
 				#setup input vector
@@ -474,7 +480,7 @@ class LSTM:
 					context[j] = NetOutputAct[j]
 					CEC[j] = CEC3[j]
 
-				if iText[word + 1] == 0: # if reached end of sentence </s>
+				if iText[word + 1] == 0 and self.independent: # if reached end of sentence </s>
 					CEC = np.zeros(cell_blocks)
 					context = np.ones(cell_blocks)
 
@@ -546,10 +552,11 @@ class LSTM:
 				learningRate /= 2
 
 			# when to stop
-			if learningRate < 0.002:
+			if learningRate < 0.001:
 				break
-			#if math.isnan(p[len(p)-1]):
-			#	break
+			
+			if iter > 25:
+				break
 
 
 	def forward(self, np.ndarray input):
