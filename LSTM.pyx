@@ -46,16 +46,6 @@ cdef inline np.ndarray[DTYPE_t, ndim=1] SoftmaxActivate(np.ndarray[DTYPE_t, ndim
 	e /= e.sum()
 	return e
 
-"""
-cdef inline np.ndarray[DTYPE_t, ndim=1] SoftmaxActivate(np.ndarray[DTYPE_t, ndim=1] x):
-	cdef double ymax = max(x)
-	cdef np.ndarray[DTYPE_t, ndim=1] y = np.zeros(len(x))
-	cdef int f = 0
-	for f in range(len(x)):
-		y[f] = exp(x[f] - ymax)
-	y /= y.sum()
-	return y
-"""
 cdef inline np.ndarray[DTYPE_t, ndim=1] SoftmaxDerivative(np.ndarray[DTYPE_t, ndim=1] x):
 	cdef np.ndarray[DTYPE_t, ndim=1] m = SoftmaxActivate(x)
 	return m - np.power(m, 2)
