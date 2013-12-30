@@ -48,9 +48,6 @@ import cPickle
 from operator import itemgetter
 import codecs
 
-# LDA module
-from lda import *
-
 # ARPA module
 from ArpaLM import *
 
@@ -113,7 +110,6 @@ class LSTM(object):
 		except (AttributeError, ValueError):
 			pass
 
-		o += "Type %s\n" % self.input_type
 		o += "Input layer %d\n" % self.input_dimension
 		o += "Hidden layer %d\n" % self.hidden_dimension
 		o += "Output layer %d\n" % self.output_dimension
@@ -130,13 +126,13 @@ class LSTM(object):
 		Parse args and initialize net
 		"""
 
-		self.num_threads=args.num_threads
+		self.len_cache = 50
 		self.version = __version__
 		self.debug = args.debug
 
 		if not args.save_net:
 			try:
-				self.net_save_file = args.train[0] + "_" + str(args.iHidden) + "_" + args.input_type + "_" + str(time.time()).split(".")[0]
+				self.net_save_file = args.train[0] + "_" + str(args.iHidden) + "_" + "_" + str(time.time()).split(".")[0]
 			except:
 				self.net_save_file = args.save_net
 		else:
@@ -144,7 +140,6 @@ class LSTM(object):
 
 		self.net_load_file = args.load_net
 		self.net_nbest_file = args.nbest_rescore
-		self.input_type = args.input_type
 
 		self.independent = args.independent
 
@@ -233,13 +228,7 @@ class LSTM(object):
 			self.arpaLM = None
 
 		# compute input length - depends on vector type
-		try:
-			self.dic
-			self.input_type
-		except AttributeError:
-			print "Error: No type of input vector."
-			return
-
+		iInputs = len(self.dic)
 		iOutputs = len(self.dic)
 		self.output_classes = False
 
@@ -499,12 +488,7 @@ class LSTM(object):
 		           'full_input_dimension', 'hidden_dimension',
 		           'independent', 'input_dimension', 'output_dimension',
 		           'peepForgetGate', 'peepInputGate', 'peepOutputGate',
-		           'version', 'weightsForgetGate', 'weightsGlobalOutput',
-		           'weightsInputGate', 'weightsNetInput', 'weightsOutputGate',
-		           'lda', 'lda_len', 'out_word_to_class', 'out_ppst_to_class',
-		           'out_class', 'projections', 'len_projections', 'lda', 'len_lda',
-		           'classes', 'len_classes', "input_type",
-		           'stopwords', 'len_cache']
+		           'version', 'weightsForgetGate', 'weightsGlobalOutput']
 
 		lstm_container = {}
 
@@ -680,10 +664,6 @@ class LSTM(object):
 		cdef double deltaCEC3 = 0
 
 		cdef int LAST_N = self.len_cache
-		if self.output_classes:
-			#cdef int len_class_cn = len(self.class_cn)
-			len_class_cn = len(self.class_cn)
-
 		cdef unsigned int len_dic = self.len_dic
 		cdef unsigned int full_input_dimension = input_dimension + cell_blocks + 1
 		cdef unsigned int full_hidden_dimension = cell_blocks + 1
@@ -740,8 +720,6 @@ class LSTM(object):
 		cdef np.ndarray[DTYPE_t, ndim=1, mode="c"] peepInputGate = np.zeros((cell_blocks), dtype=DTYPE)
 		cdef np.ndarray[DTYPE_t, ndim=1, mode="c"] peepForgetGate = np.zeros((cell_blocks), dtype=DTYPE)
 		cdef np.ndarray[DTYPE_t, ndim=1, mode="c"] peepOutputGate = np.zeros((cell_blocks), dtype=DTYPE)
-
-		cdef int num_threads = self.num_threads
 
 		cdef int word_idx = 0
 		cdef int next_word_idx = 0
