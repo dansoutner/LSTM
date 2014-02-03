@@ -73,16 +73,26 @@ python setup.py build_ext --inplace --force
 USAGE:
 
 train LSTM LM on text and save
-	python lstm.py --train train.txt test.txt valid.txt --hidden 100 --save-net example.lstm-lm
+```
+python lstm.py --train train.txt test.txt valid.txt --hidden 100 --save-net example.lstm-lm
+```
 
 sentences are processed independently (net is reset after every sentence), vocabulary limited to example.vocab (word-per-line)
-	python lstm.py --train train.txt test.txt valid.txt --hidden 100 --save-net example.lstm-lm --independent --vocabulary example.vocab
+```
+python lstm.py --train train.txt test.txt valid.txt --hidden 100 --save-net example.lstm-lm --independent --vocabulary example.vocab
+```
 
 load net and evaluate on perplexity
-	python lstm.py --load-net example.lstm-lm --ppl valid2.txt
+```
+python lstm.py --load-net example.lstm-lm --ppl valid2.txt
+```
 
 load net, combine with ARPA LM and evaluate
-	python lstm.py --load-net example.lstm-lm --ppl valid2.txt --srilm-file ngram.model.arpa --lambda 0.2
+```
+python lstm.py --load-net example.lstm-lm --ppl valid2.txt --srilm-file ngram.model.arpa --lambda 0.2
+```
 
 load net and rescore nbest list
-	python lstm.py --load-net example.lstm-lm --nbest-rescore nbest.list --wip 0 --lmw 11
+```
+python lstm.py --load-net example.lstm-lm --nbest-rescore nbest.list --wip 0 --lmw 11
+```
