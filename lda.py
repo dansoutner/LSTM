@@ -93,16 +93,19 @@ class LDA():
 		"""Loads the LDA model"""
 		self.lda = gensim.models.LdaModel.load(file_model)
 		self.dictionary = gensim.corpora.Dictionary.load(file_dictionary)
+		self.len = len(self.lda.__getitem__(self.dictionary.doc2bow(["."]), eps=0))
+		print self.len
 		print self.dictionary
 
 
 	def cache_to_fv(self, cache):
-		"""Converts cahce (list of lowercased words) to FV"""
+		"""Converts cache (list of lowercased words) to FV"""
+		cache = [x.encode('utf-8') for x in cache]   # from unicode to utf-8
 		vec_bow = self.dictionary.doc2bow(cache)
 		vec_lda = self.lda.__getitem__(vec_bow, eps=0) # convert the query to LDA space
-		out = []
-		for x in vec_lda:
-			out.append(x[1])
+		out = [0.0] * self.len
+		for i in range(self.len):
+			out[i] = vec_lda[i][1]
 		return out
 
 

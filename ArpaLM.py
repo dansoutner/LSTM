@@ -4,7 +4,7 @@
 # You may copy and modify this freely under the same terms as
 # Sphinx-III
 """
-/* ====================================================================
+====================================================================
  * Copyright (c) 1999-2001 Carnegie Mellon University.  All rights
  * reserved.
  *
@@ -13,48 +13,49 @@
  * are met:
  *
  * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer. 
+ *    notice, this list of conditions and the following disclaimer.
  *
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in
  *    the documentation and/or other materials provided with the
  *    distribution.
  *
- * This work was supported in part by funding from the Defense Advanced 
- * Research Projects Agency and the National Science Foundation of the 
+ * This work was supported in part by funding from the Defense Advanced
+ * Research Projects Agency and the National Science Foundation of the
  * United States of America, and the CMU Sphinx Speech Consortium.
  *
- * THIS SOFTWARE IS PROVIDED BY CARNEGIE MELLON UNIVERSITY ``AS IS'' AND 
- * ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, 
+ * THIS SOFTWARE IS PROVIDED BY CARNEGIE MELLON UNIVERSITY ``AS IS'' AND
+ * ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
  * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
  * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL CARNEGIE MELLON UNIVERSITY
  * NOR ITS EMPLOYEES BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT 
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, 
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY 
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT 
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+ * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
  * ====================================================================
  *
  */
 """
+
 """Read ARPA-format language models.
-  
+
 This module provides a class for reading, writing, and using ARPA
 format statistical language model files.
 """
-  
+
 #__author__ = "David Huggins-Daines <dhuggins@cs.cmu.edu>"
 #__version__ = "$Revision: 19 $"
-  
+
 from collections import defaultdict
 import numpy
 import gzip
 import re
 import os
-  
+
 LOG10TOLOG = numpy.log(10)
 LOGTOLOG10 = 1./LOG10TOLOG
 INF = -99 * LOG10TOLOG
@@ -191,20 +192,20 @@ class ArpaLM(object):
 					self.succmap[mgram] = []
 				self.succmap[mgram].append(ng[-1])
 				ngramid = ngramid + 1
-  
+
 	def get_size(self):
 		"""
 		Get the order (i.e. N) of this N-Gram model.
-  
+
 		@return: Order of this model.
 		@rtype: int
 		"""
 		return len(self.ngmap)
-  
+
 	def save(self, path):
 		"""
 		Save an ARPA format language model to a file.
-  
+
 		@param path: Path to save the file to.  If this ends in '.gz',
 					 the file contents will be gzip-compressed.
 		@type path: string
@@ -238,18 +239,17 @@ class ArpaLM(object):
 				score *= LOGTOLOG10
 				bowt *= LOGTOLOG10
 				if n > 1:
-					g = " ".join(g) 
+					g = " ".join(g)
 				if n == self.n:
 					fh.write("%.4f %s\n" % (score, g))
 				else:
 					fh.write("%.4f %s\t%.4f\n" % (score, g, bowt))
 		fh.write("\n\\end\\\n")
 		fh.close()
-  
+
 	def ngram(self, word, *hist):
 		"""
 		Get the N-gram record for word with given history.
-  
 		As with prob() and score(), the history is given in reverse order.
 		"""
 		syms = tuple(reversed((word,) + hist))
@@ -258,11 +258,11 @@ class ArpaLM(object):
 		else:
 			ngid = self.ngmap[len(syms)-1][syms]
 		return self.NGram(syms, *self.ngrams[len(syms)-1][ngid])
-  
+
 	def mgrams(self, m):
 		"""
 		Return an iterator over N-Grams of order M+1.
-  
+
 		@param m: Length of history (i.e. order-1) of desired N-Grams.
 		@type m: int
 		@return: Iterator over N-Grams
@@ -272,11 +272,11 @@ class ArpaLM(object):
 			if isinstance(ng, str):
 				ng = (ng,)
 			yield self.NGram(ng, *self.ngrams[m][ngid,:])
-  
+
 	def successor_words(self, words):
 		"""
 		Return all successor words for a word-tuple
-  
+
 		@param words: A sequence of words.
 		@type words: sequence of words
 		@return: A generator over successor words
@@ -289,11 +289,11 @@ class ArpaLM(object):
 		if words in self.succmap:
 			for w in self.succmap[words]:
 				yield w
-  
+
 	def successors(self, ng):
 		"""
 		Return all successors for an M-Gram
-  
+
 		@param ng: An Ngram as returned by mgrams()
 		@type ng: NGram
 		@return: An iterator over all (M+1)-Gram successors to ng.
@@ -305,16 +305,16 @@ class ArpaLM(object):
 				ngid = self.ngmap[len(succ)-1][succ]
 				yield self.NGram(ng.words + (w,),
 								 *self.ngrams[len(succ)-1][ngid])
-  
+
 	def score(self, *syms):
 		p = self.prob(*syms)
 		return p * self.lw + self.log_wip
-  
+
 	def prob(self, *syms):
 		"""
 		Return the language model log-probability for an N-Gram
 		(passed in reverse order, possibly with extra history)
-  
+
 		@return: The log probability for the N-Gram consisting of the
 				 words given, in base e (natural log).
 		@rtype: float
@@ -362,7 +362,7 @@ class ArpaLM(object):
 				else:
 					# Otherwise back off some more
 					return self.prob(*syms)
-  
+
 	def adapt_rescale(self, unigram, vocab=None):
 		"""Update unigram probabilities with unigram (assumed to be in
 		linear domain), then rescale N-grams ending with the same word
@@ -388,7 +388,7 @@ class ArpaLM(object):
 		else:
 			ascale = unigram / numpy.exp(self.ngrams[0][:,0])
 			self.ngrams[0][:,0] = numpy.log(unigram)
-  
+
 		for n in range(1, self.n):
 			# Total discounted probabilities for each history
 			tprob = numpy.zeros(self.ngrams[n-1].shape[0], 'd')
@@ -424,13 +424,13 @@ class ArpaLM(object):
 
 
 if __name__ == "__main__":
-	
+
 	a = ArpaLM(path="train.srilm")
-	
+
 	txt = "a related provision that benefits multinational companies expires in august nineteen eighty seven"
 	txt = "to make them directly comparable each index is based on the close of nineteen sixty nine equaling one hundred"
 	text = txt.split()
-	
+
 	for w in range(1,len(text)):
 		print a.getProbability(text[:w], text[w])
 
