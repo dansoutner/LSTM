@@ -26,7 +26,7 @@ from cython.parallel cimport prange, parallel
 cimport openmp
 
 cdef extern from "math.h":
-	#float exp(float x) nogil
+	float exp(float x) nogil
 	float tanh(float x) nogil
 	#float cosh(float x) nogil
 	float pow(float base, float exponent) nogil
@@ -69,8 +69,8 @@ cdef inline float SigmoidDerivative_f(float x) nogil:
 cpdef inline float exp10_f(float x) nogil:
 	return exp10(x)
 
-cdef inline float exp(float x) nogil:
-	return fasterexp(x)
+#cdef inline float exp(float x) nogil:
+#	return fasterexp(x)
 
 
 
