@@ -33,12 +33,17 @@ You will need:
 Python libs:
 - numpy
 - argparse (is in python 2.7 and higher)
+- gensim (for LDA extension)
 
 Files:
-- LSTM.pyx
+- LSTM.py
 - ArpaLM.py
 - setup.py
 - lstm.py
+- fast.pyx
+- lda.py
+- fastonebigheader.h
+
 
 run
 python setup.py build_ext --inplace --force
@@ -47,12 +52,12 @@ USAGE:
 
 train LSTM LM on text and save
 ```
-python lstm.py --train train.txt test.txt valid.txt --hidden 100 --save-net example.lstm-lm
+python lstm.py --train train.txt dev.txt test.txt --hidden 100 --save-net example.lstm-lm
 ```
 
 sentences are processed independently (net is reset after every sentence), vocabulary limited to example.vocab (word-per-line)
 ```
-python lstm.py --train train.txt test.txt valid.txt --hidden 100 --save-net example.lstm-lm --independent --vocabulary example.vocab
+python lstm.py --train train.txt dev.txt test.txt --hidden 100 --save-net example.lstm-lm --independent --vocabulary example.vocab
 ```
 
 load net and evaluate on perplexity
