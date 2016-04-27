@@ -1,8 +1,7 @@
 LSTM
 ====
 
-Project currently abandoned, similar toolkit for computing on GPU in LSTMLM repo.
-
+**Project currently abandoned, similar toolkit for computing on GPU in LSTMLM repo.**
 
 
 LSTM Neural Network in Python and Cython, used for language modelling
